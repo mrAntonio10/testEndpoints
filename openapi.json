@@ -1,0 +1,792 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ReKids · API comercial de solo lectura",
+    "version": "0.3.0-sandbox-package",
+    "description": "API instalable de solo lectura sobre datos ficticios. No desplegada por FORGE. Hospedar en la infraestructura del desarrollador y reemplazar el servidor ficticio tras verificarla. No ofrece acceso a ReKids real."
+  },
+  "servers": [
+    {
+      "url": "https://su-sandbox.example.invalid/integrations/v1",
+      "description": "Reemplazar por el gateway HTTPS instalado en SU infraestructura."
+    }
+  ],
+  "x-status": "installable-synthetic-sandbox",
+  "x-credential-issued": false,
+  "paths": {
+    "/branches": {
+      "get": {
+        "operationId": "listBranches",
+        "summary": "Listar sucursales autorizadas",
+        "description": "Disponible al instalar este paquete en SU sandbox. No habilitada en producción de ReKids. ",
+        "tags": [
+          "branches"
+        ],
+        "security": [
+          {
+            "IntegrationBearer": []
+          }
+        ],
+        "x-status": "installable-synthetic-sandbox",
+        "x-required-scopes": [
+          "branches:read"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Resultado autorizado.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "description": "Respuesta privada sin caché compartida.",
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store, max-age=0"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Branch"
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SCOPE_DENIED",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: 60 consultas por minuto y credencial; respetar Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Retry-After": {
+                "description": "Segundos hasta el próximo intento recomendado.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "INTEGRATION_NOT_ENABLED o TEMPORARILY_UNAVAILABLE; no compartir errores de base.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Retry-After": {
+                "description": "Segundos hasta el próximo intento recomendado.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "operationId": "listProducts",
+        "summary": "Consultar catálogo publicado",
+        "description": "Disponible al instalar este paquete en SU sandbox. No habilitada en producción de ReKids. Solo productos publicados de la sucursal autorizada. No devuelve fichas de proveedoras ni costos.",
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "IntegrationBearer": []
+          }
+        ],
+        "x-status": "installable-synthetic-sandbox",
+        "x-required-scopes": [
+          "catalog:read"
+        ],
+        "parameters": [
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Debe pertenecer a las sucursales autorizadas de la credencial."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado autorizado.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "description": "Respuesta privada sin caché compartida.",
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store, max-age=0"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "next_cursor": {
+                      "type": "string",
+                      "description": "Cursor opaco; nulo al terminar.",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "next_cursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SCOPE_DENIED",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: 60 consultas por minuto y credencial; respetar Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Retry-After": {
+                "description": "Segundos hasta el próximo intento recomendado.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "INTEGRATION_NOT_ENABLED o TEMPORARILY_UNAVAILABLE; no compartir errores de base.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Retry-After": {
+                "description": "Segundos hasta el próximo intento recomendado.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/products/{product_id}": {
+      "get": {
+        "operationId": "getProduct",
+        "summary": "Consultar ficha comercial publicada",
+        "description": "Disponible al instalar este paquete en SU sandbox. No habilitada en producción de ReKids. 404 si el producto no está publicado o no pertenece al alcance autorizado.",
+        "tags": [
+          "catalog"
+        ],
+        "security": [
+          {
+            "IntegrationBearer": []
+          }
+        ],
+        "x-status": "installable-synthetic-sandbox",
+        "x-required-scopes": [
+          "catalog:read"
+        ],
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resultado autorizado.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Cache-Control": {
+                "description": "Respuesta privada sin caché compartida.",
+                "schema": {
+                  "type": "string",
+                  "example": "private, no-store, max-age=0"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_REQUEST",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "SCOPE_DENIED",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: 60 consultas por minuto y credencial; respetar Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Retry-After": {
+                "description": "Segundos hasta el próximo intento recomendado.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "INTEGRATION_NOT_ENABLED o TEMPORARILY_UNAVAILABLE; no compartir errores de base.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Identificador de correlación.",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "Retry-After": {
+                "description": "Segundos hasta el próximo intento recomendado.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "IntegrationBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Bearer opaco exclusivo de integración; 256 bits. La base comprueba hash, entorno físico, sucursal, scopes, expiración y revocación en cada consulta. Sin cuenta de personal o administrador. Guardar solo en backend Java. Permisos indicados en x-required-scopes."
+      }
+    },
+    "schemas": {
+      "Branch": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID comercial de sucursal.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre comercial."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Photo": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID de imagen.",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL de imagen comercial aprobada; nunca un archivo privado.",
+            "format": "uri"
+          },
+          "primary": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "primary"
+        ]
+      },
+      "Product": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador estable de prenda; usar este ID al crear el pedido.",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "Código actual único."
+          },
+          "legacy_code": {
+            "type": "string",
+            "description": "Código anterior que puede tener varias coincidencias.",
+            "nullable": true
+          },
+          "branch_id": {
+            "type": "string",
+            "description": "Sucursal autorizada. Enviarla no concede acceso.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Descripción comercial."
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoría comercial."
+          },
+          "size": {
+            "type": "string",
+            "description": "Talla.",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "description": "Marca.",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "description": "Estado comercial descriptivo."
+          },
+          "price": {
+            "type": "string",
+            "description": "Importe BOB como cadena decimal; el servidor calcula el importe definitivo.",
+            "pattern": "^[0-9]+\\.[0-9]{2}$",
+            "example": "55.00"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "BOB"
+            ]
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "available",
+              "unavailable"
+            ]
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Photo"
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "Fecha UTC ISO-8601.",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "legacy_code",
+          "branch_id",
+          "name",
+          "category",
+          "size",
+          "brand",
+          "condition",
+          "price",
+          "currency",
+          "availability",
+          "photos",
+          "updated_at",
+          "version"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Código estable de error."
+          },
+          "message": {
+            "type": "string",
+            "description": "Descripción segura sin datos internos."
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Correlación para soporte.",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ]
+      }
+    }
+  }
+}
